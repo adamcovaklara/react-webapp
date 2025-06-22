@@ -1,24 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/cart";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Globe } from "lucide-react";
+import { Globe, ShoppingCart } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const translations = {
   EN: {
     home: "Home",
     about: "About",
-    contact: "Contact",
     cart: "Cart",
+    contact: "Contact",
     configuration: "Configuration",
     quickLinks: "Quick Links",
     connect: "Connect with us",
     wraps: "Wraps in Stock",
     shawls: "Shawls in Stock",
     aboutText: "This is the About page.",
-    contactText: "This is the Contact page.",
     cartText: "Your cart is currently empty.",
+    contactText: "This is the Contact page.",
+    configurationText: "Upload and edit images here.",
     privacy: "Privacy Policy",
     terms: "Terms of Service",
     availableWraps: "Available Wraps",
@@ -27,16 +28,17 @@ const translations = {
   CZ: {
     home: "Domů",
     about: "O nás",
-    contact: "Kontakt",
     cart: "Košík",
+    contact: "Kontakt",
     configuration: "Konfigurace",
     quickLinks: "Rychlé odkazy",
     connect: "Spojte se s námi",
     wraps: "Šátky skladem",
     shawls: "Šály skladem",
     aboutText: "Toto je stránka O nás.",
-    contactText: "Toto je stránka Kontakt.",
     cartText: "Váš košík je momentálně prázdný.",
+    contactText: "Toto je stránka Kontakt.",
+    configurationText: "Nahrajte a upravte obrázky zde.",
     privacy: "Zásady ochrany osobních údajů",
     terms: "Obchodní podmínky",
     availableWraps: "Dostupné šátky",
@@ -94,8 +96,68 @@ function Contact({ language }) {
   return <PageWrapper>{translations[language].contactText}</PageWrapper>;
 }
 
-function Cart({ language }) {
-  return <PageWrapper>{translations[language].cartText}</PageWrapper>;
+function Configuration({ language }) {
+  const [image, setImage] = useState(null);
+  const [scale, setScale] = useState(1);
+  const [tint, setTint] = useState("#ffffff");
+  const [copies, setCopies] = useState(1);
+  const [previewUrl, setPreviewUrl] = useState(null);
+
+  useEffect(() => {
+    if (!image) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setPreviewUrl(reader.result);
+    reader.readAsDataURL(image);
+  }, [image]);
+
+  const t = translations[language];
+
+  return (
+    <PageWrapper>
+      <h2 className="text-xl font-semibold mb-4">{translations[language].configurationText}</h2>
+      <input
+        type="file"
+        accept="image/*"
+        className="block mb-4"
+        onChange={(e) => setImage(e.target.files[0])}
+      />
+
+      <div className="mb-4">
+        <label className="block mb-1 text-sm text-gray-600">Scale</label>
+        <input type="range" min="0.1" max="2" step="0.1" value={scale} onChange={e => setScale(parseFloat(e.target.value))} />
+      </div>
+
+      <div className="mb-4">
+        <label className="block mb-1 text-sm text-gray-600">Tint</label>
+        <input type="color" value={tint} onChange={e => setTint(e.target.value)} />
+      </div>
+
+      <div className="mb-4">
+        <label className="block mb-1 text-sm text-gray-600">Copies</label>
+        <input type="number" min="1" max="5" value={copies} onChange={e => setCopies(parseInt(e.target.value))} />
+      </div>
+
+      {previewUrl && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-6">
+          {Array.from({ length: copies }).map((_, i) => (
+            <div key={i} className="border rounded overflow-hidden shadow">
+              <img
+                src={previewUrl}
+                alt={`Preview ${i + 1}`}
+                style={{
+                  transform: `scale(${scale})`,
+                  backgroundColor: tint,
+                  mixBlendMode: "multiply",
+                  width: "100%",
+                  height: "auto"
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </PageWrapper>
+  );
 }
 
 function PrivacyPolicy({ language }) {
@@ -114,45 +176,8 @@ function Shawls({ language }) {
   return <PageWrapper>{translations[language].availableShawls}</PageWrapper>;
 }
 
-function Configuration({ language }) {
-  const [image, setImage] = useState(null);
-  const [response, setResponse] = useState(null);
-
-  const handleUpload = async () => {
-    if (!image) return;
-
-    const formData = new FormData();
-    formData.append("image", image);
-
-    const res = await fetch("http://localhost:4000/api/process-image?colorize=true", {
-      method: "POST",
-      body: formData
-    });
-
-    const data = await res.json();
-    setResponse(data);
-  };
-
-  return (
-    <PageWrapper>
-      <h2 className="text-xl font-semibold mb-4">{translations[language].configurationText}</h2>
-      <input
-        type="file"
-        accept="image/*"
-        className="block mb-4"
-        onChange={(e) => setImage(e.target.files[0])}
-      />
-      <button
-        onClick={handleUpload}
-        className="bg-purple-300 hover:bg-purple-400 text-white px-4 py-2 rounded"
-      >
-        Process Image
-      </button>
-      {response && (
-        <p className="mt-4 text-green-600">{response.message}</p>
-      )}
-    </PageWrapper>
-  );
+function Cart({ language }) {
+  return <PageWrapper>{translations[language].cartText}</PageWrapper>;
 }
 
 function AnimatedRoutes({ language }) {
